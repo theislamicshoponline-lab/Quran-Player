@@ -1,0 +1,6 @@
+{
+  "name": "Quran Player & Audio Translation",
+  "description": "A comprehensive Quran audio player with multilingual translations, offline playback, custom reciters, bookmarking, and search functionality.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
