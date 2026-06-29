@@ -37,6 +37,12 @@ export default function App() {
     }
   }, [isDarkMode]);
 
+  // Prevent any browser layout shifting / upward scrolling on tab or view changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.body.scrollTo?.(0, 0);
+  }, [activeTab, selectedSurah]);
+
   const toggleTheme = () => {
     setIsDarkMode(prev => {
       const next = !prev;
@@ -1043,6 +1049,7 @@ export default function App() {
                   }
                   reciterName={activeReciterName}
                   translationName={activeTranslationName}
+                  translationId={translationId}
                   arabicFontSize={arabicFontSize}
                   translationFontSize={translationFontSize}
                   arabicLineSpacing={arabicLineSpacing}

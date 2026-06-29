@@ -1,6 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Scheherazade+New:wght@400;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #050706;
+}
+
 @font-face {
   font-family: 'QPC Uthmani Hafs';
   src: url('https://cdn.jsdelivr.net/gh/hasandor/UthmanicHafs@master/UthmanicHafs.otf') format('opentype');

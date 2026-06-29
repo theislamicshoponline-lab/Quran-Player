@@ -33,6 +33,7 @@ interface SurahDetailProps {
   translationFontSize: number;
   arabicLineSpacing: number;
   initialViewMode?: 'translation' | '15lines';
+  translationId?: string;
 }
 
 export default function SurahDetail({
@@ -56,6 +57,7 @@ export default function SurahDetail({
   translationFontSize,
   arabicLineSpacing,
   initialViewMode,
+  translationId = '',
 }: SurahDetailProps) {
   const ayahRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
@@ -92,10 +94,22 @@ export default function SurahDetail({
 
   const [currentPage, setCurrentPage] = useState<number>(0);
 
+  const [enableSwipeToTurn, setEnableSwipeToTurn] = useState<boolean>(() => {
+    const saved = localStorage.getItem('quran_reader_swipe_to_turn');
+    return saved === null ? true : saved === 'true';
+  });
+
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
   // Persistence hooks
   useEffect(() => {
     localStorage.setItem('quran_reader_view_mode', viewMode);
   }, [viewMode]);
+
+  useEffect(() => {
+    localStorage.setItem('quran_reader_swipe_to_turn', enableSwipeToTurn.toString());
+  }, [enableSwipeToTurn]);
 
   useEffect(() => {
     localStorage.setItem('quran_reader_font_mode', quranFontMode);
@@ -211,6 +225,34 @@ export default function SurahDetail({
     if (currentPageClamped < pagesLength - 1) {
       setCurrentPage(currentPageClamped + 1);
     }
+  };
+
+  // Touch Swiping Handlers for 15-line view
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!enableSwipeToTurn) return;
+    setTouchStartX(e.targetTouches[0].clientX);
+    setTouchEndX(null);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!enableSwipeToTurn) return;
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!enableSwipeToTurn || touchStartX === null || touchEndX === null) return;
+    const diffX = touchStartX - touchEndX;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(diffX) > minSwipeDistance) {
+      if (diffX > 0) {
+        handleNextPage();
+      } else {
+        handlePrevPage();
+      }
+    }
+    setTouchStartX(null);
+    setTouchEndX(null);
   };
 
   // Traditional scrolling view scroll-to-active-ayah handler
@@ -447,12 +489,14 @@ export default function SurahDetail({
                       </p>
                     </div>
 
-                    <div 
-                      className="pt-3 text-slate-400 select-all border-t border-emerald-900/10 leading-relaxed"
-                      style={{ fontSize: `${translationFontSize}px` }}
-                    >
-                      <p>{ayah.translationText || 'Translation unavailable'}</p>
-                    </div>
+                    {translationId !== 'none' && (
+                      <div 
+                        className="pt-3 text-slate-400 select-all border-t border-emerald-900/10 leading-relaxed"
+                        style={{ fontSize: `${translationFontSize}px` }}
+                      >
+                        <p>{ayah.translationText || 'Translation unavailable'}</p>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -492,6 +536,38 @@ export default function SurahDetail({
                     }`}
                   >
                     Qalam Font
+                  </button>
+                </div>
+              </div>
+
+              {/* Swipe to Turn Page option toggle */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-900/10 pb-3">
+                <div>
+                  <span className="text-xs font-bold text-emerald-200 block uppercase tracking-wider">Swipe to Turn Page</span>
+                  <span className="text-[10px] text-slate-500 block">Swipe left or right on mobile to change pages</span>
+                </div>
+                <div className="flex bg-bg-input p-0.5 rounded-xl border border-emerald-900/20 shrink-0 select-none">
+                  <button
+                    id="swipe-toggle-enabled"
+                    onClick={() => setEnableSwipeToTurn(true)}
+                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                      enableSwipeToTurn
+                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Enabled
+                  </button>
+                  <button
+                    id="swipe-toggle-disabled"
+                    onClick={() => setEnableSwipeToTurn(false)}
+                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                      !enableSwipeToTurn
+                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Disabled
                   </button>
                 </div>
               </div>
@@ -560,7 +636,12 @@ export default function SurahDetail({
               </div>
 
               {/* Book Frame */}
-              <div className="bg-bg-card border-4 border-emerald-900/30 rounded-3xl p-6 shadow-2xl overflow-hidden transition-all duration-300 relative min-h-[580px] flex flex-col justify-between">
+              <div 
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                className="bg-bg-card border-4 border-emerald-900/30 rounded-3xl p-6 shadow-2xl overflow-hidden transition-all duration-300 relative min-h-[580px] flex flex-col justify-between"
+              >
                 
                 {/* Decorative Islamic geometric corners */}
                 <div className="absolute top-2 left-2 w-5 h-5 border-t-2 border-l-2 border-emerald-500/20 rounded-tl"></div>

@@ -55,6 +55,7 @@ export const RECITERS: Reciter[] = [
 ];
 
 export const TRANSLATIONS: TranslationEdition[] = [
+  { id: 'none', name: 'None (Arabic Only)', language: 'None', englishName: 'None' },
   { id: 'en.sahih', name: 'Sahih International', language: 'English', englishName: 'English' },
   { id: 'ur.jalandhry', name: 'Fateh Muhammad Jalandhry', language: 'Urdu', englishName: 'Urdu' },
   { id: 'ur.junagarhi', name: 'Muhammad Junagarhi', language: 'Urdu', englishName: 'Urdu (Junagarhi)' },
@@ -116,19 +117,28 @@ export async function fetchSurahDetail(
   // 2. Fetch from APIs
   try {
     const apiReciterId = reciterId === 'ar.saadghamidi' ? 'ar.alafasy' : reciterId;
-    const [arabicRes, translationRes] = await Promise.all([
-      fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/${apiReciterId}`),
-      fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/${translationId}`)
-    ]);
+    let arabicRes;
+    let translationRes = null;
 
-    if (!arabicRes.ok || !translationRes.ok) {
+    if (translationId === 'none') {
+      arabicRes = await fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/${apiReciterId}`);
+    } else {
+      const [aRes, tRes] = await Promise.all([
+        fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/${apiReciterId}`),
+        fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/${translationId}`)
+      ]);
+      arabicRes = aRes;
+      translationRes = tRes;
+    }
+
+    if (!arabicRes.ok || (translationRes && !translationRes.ok)) {
       throw new Error('Failed to fetch from one of the API endpoints');
     }
 
     const arabicData = await arabicRes.json();
-    const translationData = await translationRes.json();
+    const translationData = translationRes ? await translationRes.json() : null;
 
-    if (arabicData.code !== 200 || translationData.code !== 200) {
+    if (arabicData.code !== 200 || (translationData && translationData.code !== 200)) {
       throw new Error('API reported non-200 code');
     }
 
@@ -142,7 +152,7 @@ export async function fetchSurahDetail(
     };
 
     const arabicAyahs = arabicData.data.ayahs;
-    const translationAyahs = translationData.data.ayahs;
+    const translationAyahs = translationData ? translationData.data.ayahs : [];
 
     const mergedAyahs: Ayah[] = arabicAyahs.map((arAyah: any, index: number) => {
       const transAyah = translationAyahs[index];
