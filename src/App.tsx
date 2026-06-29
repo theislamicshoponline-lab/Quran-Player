@@ -12,12 +12,12 @@ import SurahDetail from './components/SurahDetail';
 import AudioPlayer from './components/AudioPlayer';
 import BookmarksTab from './components/BookmarksTab';
 import SettingsPanel from './components/SettingsPanel';
-import { BookOpen, Bookmark as BookmarkIcon, Download, Settings, RefreshCw, AlertTriangle, HelpCircle, PlayCircle, Trash2, Sun, Moon } from 'lucide-react';
+import { BookOpen, Bookmark as BookmarkIcon, Download, Settings, RefreshCw, AlertTriangle, HelpCircle, PlayCircle, Trash2, Sun, Moon, Book } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   // Navigation & View state
-  const [activeTab, setActiveTab] = useState<'surahs' | 'bookmarks' | 'downloads' | 'settings'>('surahs');
+  const [activeTab, setActiveTab] = useState<'surahs' | 'read' | 'bookmarks' | 'downloads' | 'settings'>('surahs');
   const [selectedSurah, setSelectedSurah] = useState<Surah | null>(null);
   const [selectedSurahAyahs, setSelectedSurahAyahs] = useState<Ayah[]>([]);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
@@ -993,7 +993,7 @@ export default function App() {
           </div>
           <div className="flex items-center space-x-2.5">
             <div className="text-[10px] text-emerald-400/80 font-bold uppercase tracking-wider">
-              {downloadedSurahIds.size > 0 ? 'Offline Playback Enabled' : 'Online Streaming'}
+              {downloadedSurahIds.size > 0 ? 'Offline Playback Enabled' : 'Select Mode'}
             </div>
             <button
               onClick={toggleTheme}
@@ -1046,6 +1046,7 @@ export default function App() {
                   arabicFontSize={arabicFontSize}
                   translationFontSize={translationFontSize}
                   arabicLineSpacing={arabicLineSpacing}
+                  initialViewMode={activeTab === 'read' ? '15lines' : 'translation'}
                 />
               </motion.div>
             ) : (
@@ -1074,6 +1075,44 @@ export default function App() {
                         </h1>
                         <p className="text-[10px] text-slate-500 mt-1 font-bold uppercase tracking-widest">
                           Noble Quran Recitation
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Surahs Explorer */}
+                    {isLoadingSurahs ? (
+                      <div className="flex-1 flex flex-col items-center justify-center py-12">
+                        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-emerald-700 mb-3"></div>
+                        <p className="text-stone-500 text-xs font-semibold">Loading Chapters list...</p>
+                      </div>
+                    ) : (
+                      <SurahList
+                        surahs={surahs}
+                        downloadedSurahIds={downloadedSurahIds}
+                        onSelectSurah={handleSelectSurah}
+                        activeSurahNumber={activeAudioSurah?.number}
+                        onVoiceSearchSelectAyah={handleSelectAndPlayAyah}
+                      />
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'read' && (
+                  <div className="flex flex-col h-full">
+                    {/* Brand Banner */}
+                    <div className="bg-bg-header/60 backdrop-blur-md border-b border-emerald-900/30 text-text-primary px-6 py-5 md:px-8 flex justify-between items-center relative overflow-hidden select-none shrink-0 transition-colors duration-300">
+                      <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-y-2 text-emerald-500">
+                         <svg viewBox="0 0 100 100" className="w-20 h-20 fill-none stroke-emerald-500 stroke-[0.35]">
+                           <circle cx="50" cy="50" r="45" />
+                           <circle cx="50" cy="50" r="35" />
+                         </svg>
+                      </div>
+                      <div className="relative z-10">
+                        <h1 className="font-serif text-2xl font-bold tracking-wide text-emerald-400">
+                          القرآن الكريم
+                        </h1>
+                        <p className="text-[10px] text-slate-500 mt-1 font-bold uppercase tracking-widest">
+                          Read Quran (15-Line Mushaf)
                         </p>
                       </div>
                     </div>
@@ -1323,6 +1362,17 @@ export default function App() {
             >
               <BookOpen className="w-5 h-5 shrink-0" />
               <span className="text-[10px] mt-1 tracking-wider uppercase font-semibold">Quran</span>
+            </button>
+
+            <button
+              id="tab-btn-read"
+              onClick={() => setActiveTab('read')}
+              className={`flex flex-col items-center py-1 px-3 rounded-2xl transition-all ${
+                activeTab === 'read' ? 'text-emerald-400 font-bold' : 'text-slate-500 hover:text-emerald-500/80'
+              }`}
+            >
+              <Book className="w-5 h-5 shrink-0" />
+              <span className="text-[10px] mt-1 tracking-wider uppercase font-semibold">Read Quran</span>
             </button>
 
             <button

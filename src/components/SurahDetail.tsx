@@ -32,6 +32,7 @@ interface SurahDetailProps {
   arabicFontSize: number;
   translationFontSize: number;
   arabicLineSpacing: number;
+  initialViewMode?: 'translation' | '15lines';
 }
 
 export default function SurahDetail({
@@ -54,14 +55,23 @@ export default function SurahDetail({
   arabicFontSize,
   translationFontSize,
   arabicLineSpacing,
+  initialViewMode,
 }: SurahDetailProps) {
   const ayahRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
   // Tab View Mode: traditional scroll with translations vs immersive 15-line page
   const [viewMode, setViewMode] = useState<'translation' | '15lines'>(() => {
+    if (initialViewMode) return initialViewMode;
     const saved = localStorage.getItem('quran_reader_view_mode');
     return (saved as 'translation' | '15lines') || 'translation';
   });
+
+  // Sync with prop changes
+  useEffect(() => {
+    if (initialViewMode) {
+      setViewMode(initialViewMode);
+    }
+  }, [initialViewMode, surah.number]);
 
   // 15-Lines Font Mode: Standard Arabic vs Indo-Pak (Noorehuda Style)
   const [quranFontMode, setQuranFontMode] = useState<'arabic' | 'indopak'>(() => {
@@ -290,7 +300,7 @@ export default function SurahDetail({
             className={`flex-1 py-1.5 px-3 rounded-lg transition-all flex items-center justify-center space-x-1 ${viewMode === '15lines' ? 'bg-emerald-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
           >
             <BookOpen className="w-3.5 h-3.5 shrink-0" />
-            <span>15-Line Quran</span>
+            <span>Read Quran</span>
           </button>
         </div>
       </div>

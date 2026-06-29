@@ -444,18 +444,11 @@ export default function SurahList({
           <input
             id="surah-search-input"
             type="text"
-            className="w-full pl-10 pr-12 py-2.5 bg-bg-input hover:bg-bg-active border border-emerald-900/40 rounded-full text-text-primary placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm duration-300"
+            className="w-full pl-10 pr-4 py-2.5 bg-bg-input hover:bg-bg-active border border-emerald-900/40 rounded-full text-text-primary placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm duration-300"
             placeholder="Search Surah (e.g. Al-Fatihah, 112)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button
-            onClick={() => setShowVoiceModal(true)}
-            className="absolute right-1.5 p-2 bg-emerald-950/40 border border-emerald-500/20 hover:bg-emerald-50 hover:text-slate-950 text-emerald-400 rounded-full active:scale-95 transition-all"
-            title="Voice Search"
-          >
-            <Mic className="w-3.5 h-3.5" />
-          </button>
         </div>
 
         {/* Filters */}
