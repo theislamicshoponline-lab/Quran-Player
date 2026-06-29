@@ -1,0 +1,118 @@
+{
+  "entities": {
+    "LibraryBook": {
+      "title": "LibraryBook",
+      "description": "A book uploaded by the administrator of the shared digital library",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique ID of the book"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the book"
+        },
+        "author": {
+          "type": "string",
+          "description": "The author of the book"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the book"
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief overview of the book's contents"
+        },
+        "url": {
+          "type": "string",
+          "description": "The direct URL to download or stream the PDF file"
+        },
+        "size": {
+          "type": "string",
+          "description": "The human-readable file size"
+        },
+        "pages": {
+          "type": "string",
+          "description": "Number of pages in the book"
+        },
+        "language": {
+          "type": "string",
+          "description": "Language of the book"
+        },
+        "coverBg": {
+          "type": "string",
+          "description": "The CSS gradient classes for the book's visual cover"
+        },
+        "createdAt": {
+          "type": "integer",
+          "description": "Creation timestamp of the record"
+        }
+      },
+      "required": ["id", "title", "author", "category", "url", "coverBg"]
+    },
+    "LibraryAudio": {
+      "title": "LibraryAudio",
+      "description": "An audio file (lecture or recitation) uploaded by the administrator of the shared digital library",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique ID of the audio file"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the audio"
+        },
+        "author": {
+          "type": "string",
+          "description": "The reciter or speaker of the audio"
+        },
+        "category": {
+          "type": "string",
+          "description": "Category of the audio"
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the audio file"
+        },
+        "url": {
+          "type": "string",
+          "description": "The direct URL to download or stream the audio file"
+        },
+        "size": {
+          "type": "string",
+          "description": "The human-readable file size"
+        },
+        "duration": {
+          "type": "string",
+          "description": "Estimated duration of the audio"
+        },
+        "language": {
+          "type": "string",
+          "description": "Language of the audio"
+        },
+        "coverBg": {
+          "type": "string",
+          "description": "The CSS gradient classes for the audio visual cover"
+        },
+        "createdAt": {
+          "type": "integer",
+          "description": "Creation timestamp of the record"
+        }
+      },
+      "required": ["id", "title", "author", "category", "url", "coverBg"]
+    }
+  },
+  "firestore": {
+    "/library_books/{bookId}": {
+      "schema": "LibraryBook",
+      "description": "Collection of all public Islamic digital books shared in the app"
+    },
+    "/library_audios/{audioId}": {
+      "schema": "LibraryAudio",
+      "description": "Collection of all public Islamic audios shared in the app"
+    }
+  }
+}

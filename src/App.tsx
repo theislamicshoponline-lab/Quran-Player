@@ -12,13 +12,12 @@ import SurahDetail from './components/SurahDetail';
 import AudioPlayer from './components/AudioPlayer';
 import BookmarksTab from './components/BookmarksTab';
 import SettingsPanel from './components/SettingsPanel';
-import BooksTab from './components/BooksTab';
-import { BookOpen, Bookmark as BookmarkIcon, Download, Settings, RefreshCw, AlertTriangle, HelpCircle, PlayCircle, Trash2, Sun, Moon, Book } from 'lucide-react';
+import { BookOpen, Bookmark as BookmarkIcon, Download, Settings, RefreshCw, AlertTriangle, HelpCircle, PlayCircle, Trash2, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   // Navigation & View state
-  const [activeTab, setActiveTab] = useState<'surahs' | 'bookmarks' | 'downloads' | 'settings' | 'books'>('surahs');
+  const [activeTab, setActiveTab] = useState<'surahs' | 'bookmarks' | 'downloads' | 'settings'>('surahs');
   const [selectedSurah, setSelectedSurah] = useState<Surah | null>(null);
   const [selectedSurahAyahs, setSelectedSurahAyahs] = useState<Ayah[]>([]);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
@@ -218,8 +217,8 @@ export default function App() {
       const targetIndex = detail.ayahs.findIndex((a) => a.numberInSurah === ayahNumberInSurah);
       if (targetIndex !== -1) {
         setTimeout(() => {
-          playAyahAt(foundSurah, targetIndex, true);
-        }, 400);
+          playAyahAt(foundSurah, targetIndex, true, detail.ayahs);
+        }, 100);
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to load Quran verses.');
@@ -336,11 +335,12 @@ export default function App() {
     }
   };
 
-  const prefetchNextAyah = async (surah: Surah, currentIndex: number) => {
+  const prefetchNextAyah = async (surah: Surah, currentIndex: number, ayahsOverride?: Ayah[]) => {
+    const currentAyahsList = ayahsOverride || selectedSurahAyahs;
     const nextIndex = currentIndex + 1;
-    if (nextIndex >= selectedSurahAyahs.length) {
+    if (nextIndex >= currentAyahsList.length) {
       if (repeatMode === 'surah') {
-        const nextAyah = selectedSurahAyahs[0];
+        const nextAyah = currentAyahsList[0];
         if (nextAyah) {
           await prefetchAyah(surah, 0, nextAyah);
         }
@@ -348,7 +348,7 @@ export default function App() {
       return;
     }
 
-    const nextAyah = selectedSurahAyahs[nextIndex];
+    const nextAyah = currentAyahsList[nextIndex];
     if (nextAyah) {
       await prefetchAyah(surah, nextIndex, nextAyah);
     }
@@ -458,15 +458,16 @@ export default function App() {
   };
 
   // Audio Playback Engine
-  const playAyahAt = async (surah: Surah, index: number, autoStart: boolean = true) => {
-    if (!audioRef.current || !selectedSurahAyahs[index]) return;
+  const playAyahAt = async (surah: Surah, index: number, autoStart: boolean = true, ayahsOverride?: Ayah[]) => {
+    const currentAyahsList = ayahsOverride || selectedSurahAyahs;
+    if (!audioRef.current || !currentAyahsList[index]) return;
 
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
     setIsPlayingTranslation(false);
 
-    const ayah = selectedSurahAyahs[index];
+    const ayah = currentAyahsList[index];
     setActiveAudioSurah(surah);
     setActiveAyahIndex(index);
 
@@ -524,7 +525,7 @@ export default function App() {
     }
 
     // Trigger prefetch for the next ayah in the background immediately
-    prefetchNextAyah(surah, index);
+    prefetchNextAyah(surah, index, currentAyahsList);
   };
 
   const handlePlayPause = () => {
@@ -984,7 +985,7 @@ export default function App() {
         <div className="absolute bottom-[-10%] left-[-10%] w-[320px] h-[320px] bg-emerald-900/10 rounded-full blur-[90px] pointer-events-none z-0"></div>
 
         {/* Status Area / Screen Header */}
-        <div className="bg-bg-header/95 text-text-primary px-6 pt-5 pb-3 md:px-8 md:pt-6 md:pb-3 flex justify-between items-center text-xs font-bold tracking-wider select-none shrink-0 border-b border-emerald-900/30 z-10 transition-colors duration-300">
+        <div className="bg-bg-header/95 text-text-primary px-6 pt-[calc(1.25rem+env(safe-area-inset-top,0px))] pb-3 md:px-8 md:pt-6 md:pb-3 flex justify-between items-center text-xs font-bold tracking-wider select-none shrink-0 border-b border-emerald-900/30 z-10 transition-colors duration-300">
           <div className="flex items-center space-x-1">
             <span className="text-[10px] bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 py-0.5 px-2 rounded font-extrabold uppercase tracking-widest">
               AL-QURAN
@@ -1279,10 +1280,6 @@ export default function App() {
                     onChangeArabicLineSpacing={handleChangeArabicLineSpacing}
                   />
                 )}
-
-                {activeTab === 'books' && (
-                  <BooksTab />
-                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -1348,17 +1345,6 @@ export default function App() {
             >
               <Download className="w-5 h-5 shrink-0" />
               <span className="text-[10px] mt-1 tracking-wider uppercase font-semibold">Saved</span>
-            </button>
-
-            <button
-              id="tab-btn-books"
-              onClick={() => setActiveTab('books')}
-              className={`flex flex-col items-center py-1 px-3 rounded-2xl transition-all ${
-                activeTab === 'books' ? 'text-emerald-400 font-bold' : 'text-slate-500 hover:text-emerald-500/80'
-              }`}
-            >
-              <Book className="w-5 h-5 shrink-0" />
-              <span className="text-[10px] mt-1 tracking-wider uppercase font-semibold">Library</span>
             </button>
 
             <button

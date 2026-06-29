@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Reusable global helper to prevent ID poisoning
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 3. Secure collection matching for books
+    match /library_books/{bookId} {
+      allow read: if true;
+      allow write: if isValidId(bookId);
+    }
+
+    // 4. Secure collection matching for audios
+    match /library_audios/{audioId} {
+      allow read: if true;
+      allow write: if isValidId(audioId);
+    }
+  }
+}
