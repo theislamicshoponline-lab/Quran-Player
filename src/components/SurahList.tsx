@@ -34,6 +34,7 @@ export default function SurahList({
   const [voiceResult, setVoiceResult] = useState('');
   const [voiceError, setVoiceError] = useState('');
   const [voiceStatus, setVoiceStatus] = useState<'idle' | 'listening' | 'processing' | 'success' | 'error'>('idle');
+  const [showApkTroubleshoot, setShowApkTroubleshoot] = useState(false);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -47,6 +48,7 @@ export default function SurahList({
   const startSpeechRecognition = () => {
     setVoiceError('');
     setVoiceResult('');
+    setShowApkTroubleshoot(false);
     setVoiceStatus('listening');
     setIsListening(true);
 
@@ -269,12 +271,61 @@ export default function SurahList({
                 </div>
               )}
               {voiceStatus === 'error' && (
-                <div className="bg-red-950/20 border border-red-500/25 rounded-xl p-3 space-y-1">
+                <div className="bg-red-950/20 border border-red-500/25 rounded-xl p-3 space-y-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-red-400 flex items-center justify-center space-x-1.5">
                     <AlertCircle className="w-4 h-4" />
-                    <span>Not Found</span>
+                    <span>Mic Blocked / Error</span>
                   </h3>
                   <p className="text-[11px] text-slate-300 leading-relaxed">{voiceError}</p>
+                  
+                  {/* Troubleshooting toggle for APKs */}
+                  <div className="pt-1.5 border-t border-red-500/10 text-left">
+                    <button
+                      onClick={() => setShowApkTroubleshoot(!showApkTroubleshoot)}
+                      className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold underline cursor-pointer focus:outline-none flex items-center justify-between w-full"
+                    >
+                      <span>Using an Android APK? Click here</span>
+                      <span>{showApkTroubleshoot ? '▲ Hide' : '▼ Show Fix'}</span>
+                    </button>
+                    
+                    {showApkTroubleshoot && (
+                      <div className="mt-2 p-2.5 bg-[#0b0e0c] rounded-lg border border-emerald-900/30 space-y-2 max-h-[180px] overflow-y-auto no-scrollbar">
+                        <p className="text-[10px] font-semibold text-emerald-200">
+                          Why does this happen?
+                        </p>
+                        <p className="text-[9.5px] text-slate-400 leading-relaxed">
+                          Android WebViews block standard web page microphone access by default, even if standard Chrome permits it.
+                        </p>
+                        <p className="text-[10px] font-semibold text-emerald-200">
+                          To fix this in your APK wrapper:
+                        </p>
+                        <ol className="list-decimal list-inside text-[9.5px] text-slate-400 space-y-1 leading-relaxed">
+                          <li>
+                            <strong className="text-slate-300">Add Manifest Permission:</strong>
+                            <span className="block pl-3 text-[9px] font-mono text-emerald-400 select-all overflow-x-auto bg-black/40 p-1 rounded mt-0.5 whitespace-pre">
+                              {`<uses-permission android:name="android.permission.RECORD_AUDIO" />`}
+                            </span>
+                          </li>
+                          <li>
+                            <strong className="text-slate-300">Grant Permission in Custom WebView:</strong>
+                            <p className="pl-3 mt-0.5">Your Android Java/Kotlin code must intercept and auto-grant permission requests. Add this to your WebChromeClient definition:</p>
+                            <pre className="block text-[8.5px] font-mono text-emerald-400 select-all overflow-x-auto bg-black/40 p-1.5 rounded mt-0.5 leading-tight">
+{`webView.setWebChromeClient(new WebChromeClient() {
+  @Override
+  public void onPermissionRequest(PermissionRequest request) {
+    request.grant(request.getResources());
+  }
+});`}
+                            </pre>
+                          </li>
+                          <li>
+                            <strong className="text-slate-300">If using Capacitor/Cordova:</strong>
+                            <span className="block mt-0.5">Ensure the Microphone plugin is added so that native OS level popup appears to prompt user.</span>
+                          </li>
+                        </ol>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>

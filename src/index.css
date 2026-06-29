@@ -1,6 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Scheherazade+New:wght@400;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'QPC Uthmani Hafs';
+  src: url('https://cdn.jsdelivr.net/gh/hasandor/UthmanicHafs@master/UthmanicHafs.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'AlQalam Quran';
+  src: url('https://cdn.jsdelivr.net/gh/SajjadKhalid/urdu-fonts@master/Al_Qalam_Majeed_2_Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --bg-outer: #050706;
   --bg-app: #080A09;
@@ -89,8 +105,8 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Amiri", serif;
-  --font-indopak: "Scheherazade New", serif;
+  --font-serif: "QPC Uthmani Hafs", "Amiri", serif;
+  --font-indopak: "AlQalam Quran", "Scheherazade New", serif;
 
   --color-bg-outer: var(--bg-outer);
   --color-bg-app: var(--bg-app);

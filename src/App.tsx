@@ -12,12 +12,13 @@ import SurahDetail from './components/SurahDetail';
 import AudioPlayer from './components/AudioPlayer';
 import BookmarksTab from './components/BookmarksTab';
 import SettingsPanel from './components/SettingsPanel';
-import { BookOpen, Bookmark as BookmarkIcon, Download, Settings, RefreshCw, AlertTriangle, HelpCircle, PlayCircle, Trash2, Sun, Moon } from 'lucide-react';
+import BooksTab from './components/BooksTab';
+import { BookOpen, Bookmark as BookmarkIcon, Download, Settings, RefreshCw, AlertTriangle, HelpCircle, PlayCircle, Trash2, Sun, Moon, Book } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   // Navigation & View state
-  const [activeTab, setActiveTab] = useState<'surahs' | 'bookmarks' | 'downloads' | 'settings'>('surahs');
+  const [activeTab, setActiveTab] = useState<'surahs' | 'bookmarks' | 'downloads' | 'settings' | 'books'>('surahs');
   const [selectedSurah, setSelectedSurah] = useState<Surah | null>(null);
   const [selectedSurahAyahs, setSelectedSurahAyahs] = useState<Ayah[]>([]);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
@@ -1278,6 +1279,10 @@ export default function App() {
                     onChangeArabicLineSpacing={handleChangeArabicLineSpacing}
                   />
                 )}
+
+                {activeTab === 'books' && (
+                  <BooksTab />
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -1343,6 +1348,17 @@ export default function App() {
             >
               <Download className="w-5 h-5 shrink-0" />
               <span className="text-[10px] mt-1 tracking-wider uppercase font-semibold">Saved</span>
+            </button>
+
+            <button
+              id="tab-btn-books"
+              onClick={() => setActiveTab('books')}
+              className={`flex flex-col items-center py-1 px-3 rounded-2xl transition-all ${
+                activeTab === 'books' ? 'text-emerald-400 font-bold' : 'text-slate-500 hover:text-emerald-500/80'
+              }`}
+            >
+              <Book className="w-5 h-5 shrink-0" />
+              <span className="text-[10px] mt-1 tracking-wider uppercase font-semibold">Library</span>
             </button>
 
             <button

@@ -125,9 +125,9 @@ export default function SurahDetail({
       words.forEach(w => {
         list.push({ text: w, ayahIndex: index, isMarker: false });
       });
-      // Append standard Quranic ayah end marker
+      // Append standard Quranic ayah end marker (with brackets swapped to render in correct order)
       list.push({
-        text: `﴿${getArabicNumber(ayah.numberInSurah)}﴾`,
+        text: `﴾${getArabicNumber(ayah.numberInSurah)}﴿`,
         ayahIndex: index,
         isMarker: true,
         ayahNumber: ayah.numberInSurah
@@ -454,7 +454,7 @@ export default function SurahDetail({
             
             {/* 15-Line Configuration Bar */}
             <div className="bg-bg-card border border-emerald-900/20 rounded-2xl p-4 space-y-3.5 transition-colors duration-300">
-              {/* Font selection: Arabic Amiri vs Indo-Pak Noorehuda style */}
+              {/* Font selection: Arabic QPC Uthmani Hafs vs Indo-Pak AlQalam Quran */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-900/10 pb-3">
                 <div>
                   <span className="text-xs font-bold text-emerald-200 block uppercase tracking-wider">Select Quran Script Font</span>
@@ -470,7 +470,7 @@ export default function SurahDetail({
                         : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    Arabic Font (Amiri)
+                    Hafs Font
                   </button>
                   <button
                     id="font-switch-indopak"
@@ -481,7 +481,7 @@ export default function SurahDetail({
                         : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    Indo-Pak Font (Noorehuda Style)
+                    Qalam Font
                   </button>
                 </div>
               </div>
@@ -594,7 +594,7 @@ export default function SurahDetail({
                                       : 'font-serif'
                                   } ${
                                     word.isMarker 
-                                      ? 'text-emerald-500 font-sans font-extrabold text-[12px] sm:text-[14px] mx-1.5 bg-emerald-500/5 px-1 py-0.5 rounded border border-emerald-500/20 hover:bg-emerald-500/20' 
+                                      ? 'text-emerald-500 mx-1.5 bg-emerald-500/5 px-1.5 py-0.5 rounded border border-emerald-500/20 hover:bg-emerald-500/20' 
                                       : isHighlighted 
                                         ? 'text-emerald-300 font-extrabold underline decoration-emerald-500/50 scale-102 bg-emerald-500/10 px-0.5 rounded' 
                                         : 'text-text-primary hover:text-emerald-400 hover:scale-105'
