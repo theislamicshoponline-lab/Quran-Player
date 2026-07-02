@@ -78,7 +78,8 @@ export default function SettingsPanel({
       }
       // Al-Fatihah Ayah 1 (Bismillah) audio URL
       const audioUrl = `https://cdn.alquran.cloud/media/audio/ayah/${reciterId}/1`;
-      const audio = new Audio(audioUrl);
+      const proxiedUrl = `/api/proxy-audio?url=${encodeURIComponent(audioUrl)}`;
+      const audio = new Audio(proxiedUrl);
       audio.play().catch(err => console.error("Error playing sample:", err));
       setSampleAudio(audio);
       setPlayingSampleId(reciterId);
@@ -467,18 +468,24 @@ export default function SettingsPanel({
       </div>
 
       {/* App Info Footer */}
-      <div className="bg-bg-card border border-emerald-900/20 rounded-2xl p-4 space-y-3 transition-colors duration-300">
+      <div className="bg-bg-card border border-emerald-900/20 rounded-2xl p-5 space-y-4 transition-colors duration-300">
         <div className="flex items-center space-x-2 text-emerald-100 border-b border-emerald-900/20 pb-2">
           <Info className="w-4.5 h-4.5 text-emerald-500 shrink-0" />
-          <span className="font-bold text-xs">About Quran Player</span>
+          <span className="font-bold text-sm">About Quran Player</span>
         </div>
-        <div className="space-y-2 text-[11px] text-slate-400 leading-relaxed font-medium">
+        <div className="space-y-3.5 text-xs md:text-[13px] text-slate-300 leading-relaxed font-medium">
           <p>
-            Quran Player features an integrated audio and text caching system, enabling completely offline translation reading and audio playback.
+            Quran Player by Iqra Islamic Center lets you read, listen, and reflect on the Holy Quran in one simple app. Stream beautiful recitations by famous Qaris or download them for offline listening. Read the Quran with popular translations, bookmark your favorite verses, and continue from where you left off with the dedicated reading section.
           </p>
-          <div className="flex items-center space-x-1.5 text-emerald-400 font-semibold text-xs pt-1">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Secure offline client storage</span>
+          <p>
+            If you find any errors, mistakes, or have suggestions to improve the app, please let us know—we truly appreciate your feedback.
+          </p>
+          <p>
+            We humbly request you to remember us in your prayers. May Allah ﷻ accept this humble effort, make it a source of Sadaqah Jariyah for us, forgive our shortcomings, and guide us all to the Straight Path. Ameen.
+          </p>
+          <div className="flex items-center space-x-1.5 text-emerald-400 font-semibold text-xs pt-2">
+            <ShieldCheck className="w-4 h-4" />
+            <span>Secure offline client storage enabled</span>
           </div>
         </div>
       </div>

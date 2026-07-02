@@ -8,7 +8,8 @@ import { Surah, Ayah, DownloadState } from '../types';
 import { 
   ArrowLeft, Play, Pause, Bookmark as BookmarkIcon, 
   BookmarkCheck, CloudDownload, Trash2, Globe, CheckCircle2, RefreshCw,
-  BookOpen, Sliders, Type, ChevronLeft, ChevronRight, Eye, ListFilter
+  BookOpen, Sliders, Type, ChevronLeft, ChevronRight, Eye, ListFilter,
+  Maximize2, Minimize2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -34,6 +35,8 @@ interface SurahDetailProps {
   arabicLineSpacing: number;
   initialViewMode?: 'translation' | '15lines';
   translationId?: string;
+  isFullScreen?: boolean;
+  onToggleFullScreen?: (val: boolean) => void;
 }
 
 export default function SurahDetail({
@@ -58,6 +61,8 @@ export default function SurahDetail({
   arabicLineSpacing,
   initialViewMode,
   translationId = '',
+  isFullScreen = false,
+  onToggleFullScreen,
 }: SurahDetailProps) {
   const ayahRefs = useRef<{ [key: number]: HTMLDivElement | null }>({});
 
@@ -283,144 +288,188 @@ export default function SurahDetail({
   const isDownloading = downloadState.status === 'downloading';
 
   return (
-    <div className="flex flex-col h-full bg-bg-app text-text-primary transition-colors duration-300">
+    <div className="flex flex-col h-full bg-bg-app text-text-primary transition-colors duration-300 relative">
       
-      {/* Detail Header */}
-      <div className="bg-bg-header/80 backdrop-blur-md border-b border-emerald-900/30 px-6 py-4 md:px-8 sticky top-0 z-20 shadow-md transition-colors duration-300">
-        <div className="flex items-center justify-between">
+      {/* Immersive/FullScreen Floating Exit Button and Header Bar */}
+      {isFullScreen && (
+        <div className="absolute top-4 left-4 right-4 z-30 flex justify-between items-center pointer-events-none">
           <button
-            id="detail-back-button"
-            onClick={onBack}
-            className="p-2 bg-bg-input border border-emerald-900/30 rounded-full text-slate-300 hover:text-emerald-400 hover:bg-emerald-500/10 active:scale-95 transition-all duration-300"
-            aria-label="Go back"
+            id="exit-fullscreen-btn"
+            onClick={() => onToggleFullScreen?.(false)}
+            className="pointer-events-auto flex items-center space-x-1.5 px-3.5 py-2 bg-slate-950/85 hover:bg-slate-900 border border-emerald-500/20 text-emerald-400 font-bold rounded-full text-xs shadow-xl backdrop-blur-md transition-all active:scale-95"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <Minimize2 className="w-3.5 h-3.5" />
+            <span>Exit Full Screen</span>
           </button>
-          
-          <div className="text-center flex-1 px-3">
-            <h1 className="font-bold text-base leading-tight tracking-wide text-emerald-100">{surah.englishName}</h1>
-            <p className="text-[10px] text-slate-500 mt-0.5 uppercase tracking-wider font-semibold">
-              {surah.englishNameTranslation} • {surah.revelationType}
-            </p>
-          </div>
-
-          {/* Play / Pause Toggle */}
-          <div className="w-9 h-9 flex items-center justify-center">
-            {isPlaying && activeAyahIndex !== null ? (
-              <button
-                id="header-pause-button"
-                onClick={onPause}
-                className="p-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full hover:bg-emerald-500/20 active:scale-95 transition-all"
-              >
-                <Pause className="w-4 h-4 fill-emerald-400" />
-              </button>
-            ) : (
-              <button
-                id="header-play-button"
-                onClick={onPlayAll}
-                className="p-2 bg-emerald-500 text-slate-950 rounded-full hover:bg-emerald-600 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
-              >
-                <Play className="w-4 h-4 fill-slate-950 ml-0.5" />
-              </button>
-            )}
+          <div className="pointer-events-auto flex items-center space-x-1.5 bg-slate-950/85 border border-emerald-500/20 text-emerald-300 font-serif text-xs font-medium px-4 py-2 rounded-full shadow-xl backdrop-blur-md">
+            {surah.englishName} ({surah.name})
           </div>
         </div>
+      )}
 
-        {/* View Mode Switcher Tab Bar */}
-        <div className="flex justify-center bg-bg-input border border-emerald-900/20 rounded-xl p-1 max-w-xs mx-auto mt-4 text-[10px] font-bold uppercase tracking-wider transition-colors duration-300">
-          <button 
-            id="view-mode-translation-btn"
-            onClick={() => setViewMode('translation')} 
-            className={`flex-1 py-1.5 px-3 rounded-lg transition-all flex items-center justify-center space-x-1 ${viewMode === 'translation' ? 'bg-emerald-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
-          >
-            <ListFilter className="w-3.5 h-3.5 shrink-0" />
-            <span>Translation</span>
-          </button>
-          <button 
-            id="view-mode-15lines-btn"
-            onClick={() => setViewMode('15lines')} 
-            className={`flex-1 py-1.5 px-3 rounded-lg transition-all flex items-center justify-center space-x-1 ${viewMode === '15lines' ? 'bg-emerald-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
-          >
-            <BookOpen className="w-3.5 h-3.5 shrink-0" />
-            <span>Read Quran</span>
-          </button>
+      {/* Detail Header */}
+      {!isFullScreen && (
+        <div className="bg-bg-header/80 backdrop-blur-md border-b border-emerald-900/30 px-6 py-4 md:px-8 sticky top-0 z-20 shadow-md transition-colors duration-300">
+          <div className="flex items-center justify-between">
+            <button
+              id="detail-back-button"
+              onClick={onBack}
+              className="p-2 bg-bg-input border border-emerald-900/30 rounded-full text-slate-300 hover:text-emerald-400 hover:bg-emerald-500/10 active:scale-95 transition-all duration-300"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            
+            <div className="text-center flex-1 px-3">
+              <h1 className="font-bold text-base leading-tight tracking-wide text-emerald-100">{surah.englishName}</h1>
+              <p className="text-[10px] text-slate-500 mt-0.5 uppercase tracking-wider font-semibold">
+                {surah.englishNameTranslation} • {surah.revelationType}
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-1.5">
+              {/* Full Screen Reading Mode Toggle */}
+              <button
+                id="header-fullscreen-button"
+                onClick={() => onToggleFullScreen?.(true)}
+                className="p-1.5 bg-bg-input border border-emerald-900/30 rounded-full text-slate-300 hover:text-emerald-400 hover:bg-emerald-500/10 active:scale-95 transition-all duration-300"
+                title="Full Screen Reading Mode"
+              >
+                <Maximize2 className="w-4 h-4" />
+              </button>
+
+              {/* Play / Pause Toggle */}
+              <div className="w-9 h-9 flex items-center justify-center">
+                {isPlaying && activeAyahIndex !== null ? (
+                  <button
+                    id="header-pause-button"
+                    onClick={onPause}
+                    className="p-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full hover:bg-emerald-500/20 active:scale-95 transition-all"
+                  >
+                    <Pause className="w-4 h-4 fill-emerald-400" />
+                  </button>
+                ) : (
+                  <button
+                    id="header-play-button"
+                    onClick={onPlayAll}
+                    className="p-2 bg-emerald-500 text-slate-950 rounded-full hover:bg-emerald-600 active:scale-95 transition-all shadow-lg shadow-emerald-500/20"
+                  >
+                    <Play className="w-4 h-4 fill-slate-950 ml-0.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* View Mode Switcher Tab Bar */}
+          <div className="flex justify-center bg-bg-input border border-emerald-900/20 rounded-xl p-1 max-w-xs mx-auto mt-4 text-[10px] font-bold uppercase tracking-wider transition-colors duration-300">
+            <button 
+              id="view-mode-translation-btn"
+              onClick={() => setViewMode('translation')} 
+              className={`flex-1 py-1.5 px-3 rounded-lg transition-all flex items-center justify-center space-x-1 ${viewMode === 'translation' ? 'bg-emerald-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              <ListFilter className="w-3.5 h-3.5 shrink-0" />
+              <span>Translation</span>
+            </button>
+            <button 
+              id="view-mode-15lines-btn"
+              onClick={() => setViewMode('15lines')} 
+              className={`flex-1 py-1.5 px-3 rounded-lg transition-all flex items-center justify-center space-x-1 ${viewMode === '15lines' ? 'bg-emerald-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              <BookOpen className="w-3.5 h-3.5 shrink-0" />
+              <span>Read Quran</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Primary Workspace Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-32">
+      <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isFullScreen ? 'pt-20 pb-12' : 'pb-32'}`}>
 
         {/* Dynamic Reader Modes */}
         {viewMode === 'translation' ? (
           /* ================= MODE A: TRANSLATION (SCROLL LIST) ================= */
           <>
             {/* Decorated Banner Card */}
-            <div className="bg-bg-card rounded-2xl p-4 border border-emerald-900/30 text-center relative overflow-hidden transition-colors duration-300">
-              <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-x-8 translate-y-8 text-emerald-500">
-                 <svg viewBox="0 0 100 100" className="w-32 h-32 fill-none stroke-emerald-500 stroke-[0.25]">
-                   <circle cx="50" cy="50" r="45" />
-                   <circle cx="50" cy="50" r="35" />
-                 </svg>
-              </div>
-
-              <div className="font-serif text-3xl font-medium tracking-wide mb-1 text-emerald-400">
-                {surah.name}
-              </div>
-              
-              <div className="text-xs text-slate-400 font-medium">
-                Reciter: <span className="text-emerald-300 font-semibold">{reciterName}</span>
-              </div>
-
-              {surah.number !== 1 && surah.number !== 9 && (
-                <div className="font-serif text-2xl font-normal text-emerald-100 mt-3 select-none leading-relaxed">
-                  بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
-                </div>
-              )}
-
-              {/* Offline / Save Area */}
-              <div className="flex items-center justify-between mt-4 pt-3 border-t border-emerald-900/30 text-xs">
-                <div className="flex items-center space-x-1.5">
-                  <Globe className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="text-slate-400">
-                    {isCompleted ? 'Saved Offline' : 'Online Streaming'}
-                  </span>
+            {!isFullScreen && (
+              <div className="bg-bg-card rounded-2xl p-4 border border-emerald-900/30 text-center relative overflow-hidden transition-colors duration-300">
+                <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-x-8 translate-y-8 text-emerald-500">
+                   <svg viewBox="0 0 100 100" className="w-32 h-32 fill-none stroke-emerald-500 stroke-[0.25]">
+                     <circle cx="50" cy="50" r="45" />
+                     <circle cx="50" cy="50" r="35" />
+                   </svg>
                 </div>
 
-                {isCompleted ? (
+                <div className="font-serif text-3xl font-medium tracking-wide mb-1 text-emerald-400">
+                  {surah.name}
+                </div>
+                
+                <div className="text-xs text-slate-400 font-medium">
+                  Reciter: <span className="text-emerald-300 font-semibold">{reciterName}</span>
+                </div>
+
+                <div className="mt-3.5 flex justify-center">
                   <button
-                    id="delete-download-button"
-                    onClick={onDeleteDownload}
-                    className="flex items-center space-x-1 py-1 px-2.5 rounded-lg bg-red-950/40 border border-red-500/20 text-red-400 hover:bg-red-900/30 active:scale-95 transition-all font-semibold"
+                    id="banner-fullscreen-button"
+                    onClick={() => onToggleFullScreen?.(true)}
+                    className="flex items-center space-x-1.5 py-1.5 px-4 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 active:scale-95 transition-all font-bold text-xs border border-emerald-500/20 cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Delete Offline</span>
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>Full Screen Reading</span>
                   </button>
-                ) : isDownloading ? (
-                  <div className="flex items-center space-x-2 text-emerald-400">
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span className="font-semibold">Downloading {downloadState.progress}%</span>
+                </div>
+
+                {surah.number !== 1 && surah.number !== 9 && (
+                  <div className="font-serif text-2xl font-normal text-emerald-100 mt-3 select-none leading-relaxed">
+                    بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
                   </div>
-                ) : (
-                  <button
-                    id="download-offline-button"
-                    onClick={onDownload}
-                    className="flex items-center space-x-1 py-1 px-2.5 rounded-lg bg-emerald-500 text-slate-950 font-bold hover:bg-emerald-400 active:scale-95 transition-all shadow-sm"
-                  >
-                    <CloudDownload className="w-3.5 h-3.5" />
-                    <span>Save Offline</span>
-                  </button>
+                )}
+
+                {/* Offline / Save Area */}
+                <div className="flex items-center justify-between mt-4 pt-3 border-t border-emerald-900/30 text-xs">
+                  <div className="flex items-center space-x-1.5">
+                    <Globe className="w-3.5 h-3.5 text-emerald-500" />
+                    <span className="text-slate-400">
+                      {isCompleted ? 'Saved Offline' : 'Online Streaming'}
+                    </span>
+                  </div>
+
+                  {isCompleted ? (
+                    <button
+                      id="delete-download-button"
+                      onClick={onDeleteDownload}
+                      className="flex items-center space-x-1 py-1 px-2.5 rounded-lg bg-red-950/40 border border-red-500/20 text-red-400 hover:bg-red-900/30 active:scale-95 transition-all font-semibold"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Offline</span>
+                    </button>
+                  ) : isDownloading ? (
+                    <div className="flex items-center space-x-2 text-emerald-400">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span className="font-semibold">Downloading {downloadState.progress}%</span>
+                    </div>
+                  ) : (
+                    <button
+                      id="download-offline-button"
+                      onClick={onDownload}
+                      className="flex items-center space-x-1 py-1 px-2.5 rounded-lg bg-emerald-500 text-slate-950 font-bold hover:bg-emerald-400 active:scale-95 transition-all shadow-sm"
+                    >
+                      <CloudDownload className="w-3.5 h-3.5" />
+                      <span>Save Offline</span>
+                    </button>
+                  )}
+                </div>
+
+                {isDownloading && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-bg-input">
+                    <div 
+                      className="h-full bg-emerald-500 transition-all duration-300"
+                      style={{ width: `${downloadState.progress}%` }}
+                    ></div>
+                  </div>
                 )}
               </div>
-
-              {isDownloading && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-bg-input">
-                  <div 
-                    className="h-full bg-emerald-500 transition-all duration-300"
-                    style={{ width: `${downloadState.progress}%` }}
-                  ></div>
-                </div>
-              )}
-            </div>
+            )}
 
             {/* Ayah Cards */}
             <div className="space-y-4">
@@ -507,126 +556,128 @@ export default function SurahDetail({
           <div className="space-y-4">
             
             {/* 15-Line Configuration Bar */}
-            <div className="bg-bg-card border border-emerald-900/20 rounded-2xl p-4 space-y-3.5 transition-colors duration-300">
-              {/* Font selection: Arabic QPC Uthmani Hafs vs Indo-Pak AlQalam Quran */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-900/10 pb-3">
-                <div>
-                  <span className="text-xs font-bold text-emerald-200 block uppercase tracking-wider">Select Quran Script Font</span>
-                  <span className="text-[10px] text-slate-500 block">Choose your preferred writing style</span>
-                </div>
-                <div className="flex bg-bg-input p-0.5 rounded-xl border border-emerald-900/20 shrink-0 select-none">
-                  <button
-                    id="font-switch-arabic"
-                    onClick={() => setQuranFontMode('arabic')}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
-                      quranFontMode === 'arabic'
-                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    Hafs Font
-                  </button>
-                  <button
-                    id="font-switch-indopak"
-                    onClick={() => setQuranFontMode('indopak')}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
-                      quranFontMode === 'indopak'
-                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    Qalam Font
-                  </button>
-                </div>
-              </div>
-
-              {/* Swipe to Turn Page option toggle */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-900/10 pb-3">
-                <div>
-                  <span className="text-xs font-bold text-emerald-200 block uppercase tracking-wider">Swipe to Turn Page</span>
-                  <span className="text-[10px] text-slate-500 block">Swipe left or right on mobile to change pages</span>
-                </div>
-                <div className="flex bg-bg-input p-0.5 rounded-xl border border-emerald-900/20 shrink-0 select-none">
-                  <button
-                    id="swipe-toggle-enabled"
-                    onClick={() => setEnableSwipeToTurn(true)}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
-                      enableSwipeToTurn
-                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    Enabled
-                  </button>
-                  <button
-                    id="swipe-toggle-disabled"
-                    onClick={() => setEnableSwipeToTurn(false)}
-                    className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
-                      !enableSwipeToTurn
-                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    Disabled
-                  </button>
-                </div>
-              </div>
-
-              {/* Adjust text metrics */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
-                {/* Font Size Adjuster */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-1.5 text-slate-400">
-                    <Type className="w-3.5 h-3.5 text-emerald-500" />
-                    <span className="text-xs font-semibold">Font Size</span>
+            {!isFullScreen && (
+              <div className="bg-bg-card border border-emerald-900/20 rounded-2xl p-4 space-y-3.5 transition-colors duration-300">
+                {/* Font selection: Arabic QPC Uthmani Hafs vs Indo-Pak AlQalam Quran */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-900/10 pb-3">
+                  <div>
+                    <span className="text-xs font-bold text-emerald-200 block uppercase tracking-wider">Select Quran Script Font</span>
+                    <span className="text-[10px] text-slate-500 block">Choose your preferred writing style</span>
                   </div>
-                  <div className="flex items-center space-x-2 bg-bg-input border border-emerald-900/30 rounded-lg p-0.5">
+                  <div className="flex bg-bg-input p-0.5 rounded-xl border border-emerald-900/20 shrink-0 select-none">
                     <button
-                      onClick={() => setReaderFontSize(Math.max(16, readerFontSize - 2))}
-                      className="px-2 py-0.5 text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-400 rounded text-sm font-bold active:scale-95"
+                      id="font-switch-arabic"
+                      onClick={() => setQuranFontMode('arabic')}
+                      className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                        quranFontMode === 'arabic'
+                          ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
                     >
-                      -
+                      Hafs Font
                     </button>
-                    <span className="text-xs font-bold text-emerald-200 px-1">{readerFontSize}px</span>
                     <button
-                      onClick={() => setReaderFontSize(Math.min(48, readerFontSize + 2))}
-                      className="px-2 py-0.5 text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-400 rounded text-sm font-bold active:scale-95"
+                      id="font-switch-indopak"
+                      onClick={() => setQuranFontMode('indopak')}
+                      className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                        quranFontMode === 'indopak'
+                          ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
                     >
-                      +
+                      Qalam Font
                     </button>
                   </div>
                 </div>
 
-                {/* Density: Words Per Line */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-1.5 text-slate-400">
-                    <Sliders className="w-3.5 h-3.5 text-emerald-500" />
-                    <span className="text-xs font-semibold">Words Per Line</span>
+                {/* Swipe to Turn Page option toggle */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-900/10 pb-3">
+                  <div>
+                    <span className="text-xs font-bold text-emerald-200 block uppercase tracking-wider">Swipe to Turn Page</span>
+                    <span className="text-[10px] text-slate-500 block">Swipe left or right on mobile to change pages</span>
                   </div>
-                  <div className="flex items-center space-x-2 bg-bg-input border border-emerald-900/30 rounded-lg p-0.5">
+                  <div className="flex bg-bg-input p-0.5 rounded-xl border border-emerald-900/20 shrink-0 select-none">
                     <button
-                      onClick={() => {
-                        setWordsPerLine(Math.max(5, wordsPerLine - 1));
-                        setCurrentPage(0); // reset page to avoid out of bounds
-                      }}
-                      className="px-2 py-0.5 text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-400 rounded text-sm font-bold active:scale-95"
+                      id="swipe-toggle-enabled"
+                      onClick={() => setEnableSwipeToTurn(true)}
+                      className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                        enableSwipeToTurn
+                          ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
                     >
-                      -
+                      Enabled
                     </button>
-                    <span className="text-xs font-bold text-emerald-200 px-1">{wordsPerLine} words</span>
                     <button
-                      onClick={() => {
-                        setWordsPerLine(Math.min(12, wordsPerLine + 1));
-                        setCurrentPage(0); // reset page to avoid out of bounds
-                      }}
-                      className="px-2 py-0.5 text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-400 rounded text-sm font-bold active:scale-95"
+                      id="swipe-toggle-disabled"
+                      onClick={() => setEnableSwipeToTurn(false)}
+                      className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                        !enableSwipeToTurn
+                          ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
                     >
-                      +
+                      Disabled
                     </button>
                   </div>
                 </div>
+
+                {/* Adjust text metrics */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
+                  {/* Font Size Adjuster */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-1.5 text-slate-400">
+                      <Type className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-xs font-semibold">Font Size</span>
+                    </div>
+                    <div className="flex items-center space-x-2 bg-bg-input border border-emerald-900/30 rounded-lg p-0.5">
+                      <button
+                        onClick={() => setReaderFontSize(Math.max(16, readerFontSize - 2))}
+                        className="px-2 py-0.5 text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-400 rounded text-sm font-bold active:scale-95"
+                      >
+                        -
+                      </button>
+                      <span className="text-xs font-bold text-emerald-200 px-1">{readerFontSize}px</span>
+                      <button
+                        onClick={() => setReaderFontSize(Math.min(48, readerFontSize + 2))}
+                        className="px-2 py-0.5 text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-400 rounded text-sm font-bold active:scale-95"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Density: Words Per Line */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-1.5 text-slate-400">
+                      <Sliders className="w-3.5 h-3.5 text-emerald-500" />
+                      <span className="text-xs font-semibold">Words Per Line</span>
+                    </div>
+                    <div className="flex items-center space-x-2 bg-bg-input border border-emerald-900/30 rounded-lg p-0.5">
+                      <button
+                        onClick={() => {
+                          setWordsPerLine(Math.max(5, wordsPerLine - 1));
+                          setCurrentPage(0); // reset page to avoid out of bounds
+                        }}
+                        className="px-2 py-0.5 text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-400 rounded text-sm font-bold active:scale-95"
+                      >
+                        -
+                      </button>
+                      <span className="text-xs font-bold text-emerald-200 px-1">{wordsPerLine} words</span>
+                      <button
+                        onClick={() => {
+                          setWordsPerLine(Math.min(12, wordsPerLine + 1));
+                          setCurrentPage(0); // reset page to avoid out of bounds
+                        }}
+                        className="px-2 py-0.5 text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-400 rounded text-sm font-bold active:scale-95"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Immersive 15-Line Mushaf Page */}
             <div className="relative">
@@ -754,21 +805,33 @@ export default function SurahDetail({
             </div>
 
             {/* Immersive Audio Banner control while reading */}
-            <div className="bg-bg-card border border-emerald-900/20 rounded-2xl p-4 flex items-center justify-between text-xs transition-colors duration-300">
-              <div className="flex items-center space-x-2">
-                <BookOpen className="w-4 h-4 text-emerald-500 shrink-0 animate-pulse" />
-                <span className="text-slate-400 font-medium">
-                  {isPlaying ? 'Currently Reciting...' : 'Immersive Memorizer'}
-                </span>
+            {!isFullScreen && (
+              <div className="bg-bg-card border border-emerald-900/20 rounded-2xl p-4 flex items-center justify-between text-xs transition-colors duration-300">
+                <div className="flex items-center space-x-2">
+                  <BookOpen className="w-4 h-4 text-emerald-500 shrink-0 animate-pulse" />
+                  <span className="text-slate-400 font-medium">
+                    {isPlaying ? 'Currently Reciting...' : 'Immersive Memorizer'}
+                  </span>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    id="immersive-reader-fullscreen"
+                    onClick={() => onToggleFullScreen?.(true)}
+                    className="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 active:scale-95 transition-all font-bold rounded-xl border border-emerald-500/20 flex items-center space-x-1 cursor-pointer"
+                  >
+                    <Maximize2 className="w-3.5 h-3.5" />
+                    <span>Full Screen</span>
+                  </button>
+                  <button
+                    id="immersive-reader-play-all"
+                    onClick={isPlaying ? onPause : onPlayAll}
+                    className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold rounded-xl transition-all shadow-md shadow-emerald-500/10"
+                  >
+                    {isPlaying ? 'Pause Audio' : 'Play Surah'}
+                  </button>
+                </div>
               </div>
-              <button
-                id="immersive-reader-play-all"
-                onClick={isPlaying ? onPause : onPlayAll}
-                className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-bold rounded-xl transition-all shadow-md shadow-emerald-500/10"
-              >
-                {isPlaying ? 'Pause Audio' : 'Play Surah'}
-              </button>
-            </div>
+            )}
 
           </div>
         )}

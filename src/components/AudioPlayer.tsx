@@ -112,7 +112,7 @@ export default function AudioPlayer({
 
                   <div className="flex flex-col min-w-0">
                     <span className="font-bold text-sm tracking-tight truncate text-emerald-50">
-                      {surah.englishName} ({surah.number}:{ayah.numberInSurah})
+                      {surah.number === -1 ? surah.englishName : `${surah.englishName} (${surah.number}:${ayah.numberInSurah})`}
                     </span>
                     <span className="text-xs text-slate-400 truncate">
                       {isPlayingTranslation ? (
@@ -238,19 +238,52 @@ export default function AudioPlayer({
               </div>
 
               {/* Arabic display (Beautiful central visual container) */}
-              <div className="flex-1 flex flex-col justify-center items-center py-4 px-2 my-1 text-center bg-bg-app rounded-3xl border border-emerald-900/40 shadow-inner overflow-y-auto max-h-[160px] transition-colors duration-300">
-                <p className="font-serif text-2xl text-emerald-300 leading-loose select-all text-center">
-                  {ayah.text}
-                </p>
-                <p className="text-slate-400 text-xs mt-2 italic px-3 line-clamp-3 select-all">
-                  "{ayah.translationText}"
-                </p>
-              </div>
+              {surah.number === -1 ? (
+                <div className="flex-1 flex flex-col justify-center items-center py-5 px-4 my-1 text-center bg-gradient-to-b from-bg-app to-emerald-950/20 rounded-3xl border border-emerald-900/40 shadow-inner overflow-hidden max-h-[160px] w-full transition-colors duration-300 select-none">
+                  {/* Glowing audio visualizer wave animation */}
+                  <div className="flex items-end justify-center space-x-1.5 h-8 mb-4">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => {
+                      const duration = 0.5 + Math.random() * 0.8;
+                      const delay = Math.random() * 0.5;
+                      return (
+                        <motion.div
+                          key={i}
+                          animate={{
+                            height: isPlaying ? [8, 32, 8] : 8,
+                          }}
+                          transition={{
+                            duration: duration,
+                            repeat: Infinity,
+                            delay: delay,
+                            ease: 'easeInOut',
+                          }}
+                          className="w-1 bg-emerald-405/80 bg-emerald-400 rounded-full"
+                        />
+                      );
+                    })}
+                  </div>
+                  <p className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-1.5 animate-pulse">
+                    {isPlaying ? 'Continuous Listening Mode Active' : 'Audio Paused'}
+                  </p>
+                  <p className="text-slate-300 text-[11px] px-4 max-w-xs leading-relaxed">
+                    Focus on the protective recitation. Ideal for self-ruqyah, sleep, or deep spiritual healing.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex-1 flex flex-col justify-center items-center py-4 px-2 my-1 text-center bg-bg-app rounded-3xl border border-emerald-900/40 shadow-inner overflow-y-auto max-h-[160px] transition-colors duration-300">
+                  <p className="font-serif text-2xl text-emerald-300 leading-loose select-all text-center">
+                    {ayah.text}
+                  </p>
+                  <p className="text-slate-400 text-xs mt-2 italic px-3 line-clamp-3 select-all">
+                    "{ayah.translationText}"
+                  </p>
+                </div>
+              )}
 
               {/* Player Metadata (Surah detail, active verse, reciter) */}
               <div className="text-center mt-2">
                 <p className="font-semibold text-emerald-100 text-base">
-                  Verse {surah.number}:{ayah.numberInSurah}
+                  {surah.number === -1 ? 'Spiritual Healing & Protection' : `Verse ${surah.number}:${ayah.numberInSurah}`}
                 </p>
                 <p className="text-xs text-slate-450 mt-0.5">
                   {isPlayingTranslation ? (
@@ -307,23 +340,25 @@ export default function AudioPlayer({
                     )}
                   </button>
 
-                  <button
-                    id="expanded-play-translation-button"
-                    onClick={() => onTogglePlayTranslation(!playTranslation)}
-                    className={`p-2 rounded-2xl relative transition-all active:scale-90 border ${
-                      playTranslation
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                        : 'bg-transparent border-transparent text-slate-400 hover:text-white'
-                    }`}
-                    title={playTranslation ? "Recite Translation: ON" : "Recite Translation: OFF"}
-                  >
-                    <Languages className="w-5 h-5" />
-                    {playTranslation && (
-                      <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[6px] font-bold text-slate-950">
-                        ✓
-                      </span>
-                    )}
-                  </button>
+                  {surah.number !== -1 && (
+                    <button
+                      id="expanded-play-translation-button"
+                      onClick={() => onTogglePlayTranslation(!playTranslation)}
+                      className={`p-2 rounded-2xl relative transition-all active:scale-90 border ${
+                        playTranslation
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                          : 'bg-transparent border-transparent text-slate-400 hover:text-white'
+                      }`}
+                      title={playTranslation ? "Recite Translation: ON" : "Recite Translation: OFF"}
+                    >
+                      <Languages className="w-5 h-5" />
+                      {playTranslation && (
+                        <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[6px] font-bold text-slate-950">
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {/* Back / Next Center Panel */}

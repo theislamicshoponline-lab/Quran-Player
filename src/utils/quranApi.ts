@@ -479,3 +479,43 @@ export function parseQuranRef(text: string, surahs: Surah[]): { surahNumber: num
   return null;
 }
 
+// Function to fetch Ayat Al-Kursi specifically with audio and translation
+export async function fetchAyatAlKursi(reciterId: string, translationId: string): Promise<Ayah> {
+  const apiReciterId = reciterId === 'ar.saadghamidi' ? 'ar.alafasy' : reciterId;
+  const arabicUrl = `https://api.alquran.cloud/v1/ayah/2:255/${apiReciterId}`;
+  const translationUrl = translationId !== 'none' ? `https://api.alquran.cloud/v1/ayah/2:255/${translationId}` : null;
+
+  try {
+    const [arRes, trRes] = await Promise.all([
+      fetch(arabicUrl),
+      translationUrl ? fetch(translationUrl) : Promise.resolve(null)
+    ]);
+
+    if (!arRes.ok || (trRes && !trRes.ok)) {
+      throw new Error('Failed to fetch Ayat al-Kursi');
+    }
+
+    const arData = await arRes.json();
+    const trData = trRes ? await trRes.json() : null;
+
+    let audioUrl = arData.data.audio;
+    if (reciterId === 'ar.saadghamidi') {
+      audioUrl = `https://everyayah.com/data/Ghamadi_40kbps/002255.mp3`;
+    } else if (audioUrl && audioUrl.startsWith('http://')) {
+      audioUrl = audioUrl.replace('http://', 'https://');
+    }
+
+    return {
+      number: arData.data.number,
+      audio: audioUrl,
+      text: arData.data.text,
+      numberInSurah: 255,
+      translationText: trData ? trData.data.text : ''
+    };
+  } catch (err) {
+    console.error('Error fetching Ayat Al-Kursi', err);
+    throw new Error('Ayat Al-Kursi is not available offline. Please check your connection.');
+  }
+}
+
+

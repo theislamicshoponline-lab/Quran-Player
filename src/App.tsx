@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Surah, Ayah, Bookmark, DownloadState, DownloadedSurah } from './types';
-import { fetchSurahs, fetchSurahDetail, downloadSurah, RECITERS, TRANSLATIONS } from './utils/quranApi';
+import { fetchSurahs, fetchSurahDetail, downloadSurah, RECITERS, TRANSLATIONS, fetchAyatAlKursi } from './utils/quranApi';
 import { getAllDownloadedSurahs, deleteDownloadedSurah, getAudioBlob } from './utils/db';
 import SurahList from './components/SurahList';
 import SurahDetail from './components/SurahDetail';
@@ -20,7 +20,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'surahs' | 'read' | 'bookmarks' | 'downloads' | 'settings'>('surahs');
   const [selectedSurah, setSelectedSurah] = useState<Surah | null>(null);
   const [selectedSurahAyahs, setSelectedSurahAyahs] = useState<Ayah[]>([]);
+  const [currentPlaylist, setCurrentPlaylist] = useState<Ayah[]>([]);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   // Theme selection
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -42,6 +44,13 @@ export default function App() {
     window.scrollTo(0, 0);
     document.body.scrollTo?.(0, 0);
   }, [activeTab, selectedSurah]);
+
+  // Reset full screen reading mode when leaving surah detail
+  useEffect(() => {
+    if (!selectedSurah) {
+      setIsFullScreen(false);
+    }
+  }, [selectedSurah]);
 
   const toggleTheme = () => {
     setIsDarkMode(prev => {
@@ -295,6 +304,24 @@ export default function App() {
     setDownloadStates((prev) => ({ ...prev, ...states }));
   }, [downloadedSurahs]);
 
+  // Helper to process audio URL, applying secure HTTPS and proxying as needed
+  const getProcessedAudioUrl = (url: string): string => {
+    if (!url) return '';
+    if (url.startsWith('blob:') || url.startsWith('/')) {
+      return url;
+    }
+    let finalUrl = url;
+    if (finalUrl.startsWith('http://')) {
+      finalUrl = finalUrl.replace('http://', 'https://');
+    }
+    
+    // Proxy all external HTTP/HTTPS audio resources to completely bypass CORS, iframe constraints, and Referer blocks
+    if (finalUrl.startsWith('https://') && !finalUrl.startsWith(window.location.origin)) {
+      return `${window.location.origin}/api/proxy-audio?url=${encodeURIComponent(finalUrl)}`;
+    }
+    return finalUrl;
+  };
+
   // Prefetch and caching helper functions
   const prefetchAyah = async (surah: Surah, index: number, ayah: Ayah) => {
     if (
@@ -323,15 +350,16 @@ export default function App() {
     }
 
     if (srcUrl) {
+      const finalSrcUrl = getProcessedAudioUrl(srcUrl);
       prefetchedAyahAudioRef.current = {
         surahNumber: surah.number,
         ayahIndex: index,
-        url: srcUrl,
+        url: finalSrcUrl,
       };
 
       try {
         const preloadAudio = new Audio();
-        preloadAudio.src = srcUrl;
+        preloadAudio.src = finalSrcUrl;
         preloadAudio.preload = 'auto';
         preloadAudio.load();
         preloadAudioObjRef.current = preloadAudio;
@@ -342,7 +370,7 @@ export default function App() {
   };
 
   const prefetchNextAyah = async (surah: Surah, currentIndex: number, ayahsOverride?: Ayah[]) => {
-    const currentAyahsList = ayahsOverride || selectedSurahAyahs;
+    const currentAyahsList = ayahsOverride || currentPlaylist;
     const nextIndex = currentIndex + 1;
     if (nextIndex >= currentAyahsList.length) {
       if (repeatMode === 'surah') {
@@ -423,14 +451,14 @@ export default function App() {
   };
 
   const playTranslationForAyah = async (surah: Surah, index: number) => {
-    if (!audioRef.current || !selectedSurahAyahs[index]) return;
+    if (!audioRef.current || !currentPlaylist[index]) return;
 
-    const ayah = selectedSurahAyahs[index];
+    const ayah = currentPlaylist[index];
     const transAudioUrl = getTranslationAudioUrl(surah.number, ayah.numberInSurah, translationId, ayah.number);
 
     if (transAudioUrl) {
       setIsPlayingTranslation(true);
-      audioRef.current.src = transAudioUrl;
+      audioRef.current.src = getProcessedAudioUrl(transAudioUrl);
       audioRef.current.playbackRate = playbackSpeed;
       try {
         await audioRef.current.play();
@@ -467,6 +495,8 @@ export default function App() {
   const playAyahAt = async (surah: Surah, index: number, autoStart: boolean = true, ayahsOverride?: Ayah[]) => {
     const currentAyahsList = ayahsOverride || selectedSurahAyahs;
     if (!audioRef.current || !currentAyahsList[index]) return;
+
+    setCurrentPlaylist(currentAyahsList);
 
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -505,12 +535,17 @@ export default function App() {
           console.warn('Could not retrieve offline blob, falling back to CDN streaming', err);
         }
       }
+      // Apply proxying/normalization if not already processed by prefetch
+      if (!srcUrl.startsWith('blob:') && !srcUrl.includes('/api/proxy-audio')) {
+        srcUrl = getProcessedAudioUrl(srcUrl);
+      }
     }
 
     const oldUrl = currentObjectUrlRef.current;
-    audioRef.current.src = srcUrl;
+    let finalSrcUrl = srcUrl;
+    audioRef.current.src = finalSrcUrl;
     audioRef.current.playbackRate = playbackSpeed;
-    currentObjectUrlRef.current = srcUrl.startsWith('blob:') ? srcUrl : null;
+    currentObjectUrlRef.current = finalSrcUrl.startsWith('blob:') ? finalSrcUrl : null;
 
     if (oldUrl && oldUrl.startsWith('blob:') && oldUrl !== srcUrl) {
       setTimeout(() => {
@@ -531,15 +566,17 @@ export default function App() {
     }
 
     // Trigger prefetch for the next ayah in the background immediately
-    prefetchNextAyah(surah, index, currentAyahsList);
+    if (surah.number !== -1) {
+      prefetchNextAyah(surah, index, currentAyahsList);
+    }
   };
 
   const handlePlayPause = () => {
     if (!audioRef.current) return;
 
     // Check if the current translation doesn't have an audio file (using TTS)
-    const transAudioUrl = (activeAudioSurah && activeAyahIndex !== null && selectedSurahAyahs[activeAyahIndex])
-      ? getTranslationAudioUrl(activeAudioSurah.number, selectedSurahAyahs[activeAyahIndex].numberInSurah, translationId, selectedSurahAyahs[activeAyahIndex].number)
+    const transAudioUrl = (activeAudioSurah && activeAyahIndex !== null && currentPlaylist[activeAyahIndex])
+      ? getTranslationAudioUrl(activeAudioSurah.number, currentPlaylist[activeAyahIndex].numberInSurah, translationId, currentPlaylist[activeAyahIndex].number)
       : '';
     const isUsingTTS = isPlayingTranslation && !transAudioUrl;
 
@@ -554,8 +591,8 @@ export default function App() {
       setIsPlaying(false);
     } else {
       if (isUsingTTS) {
-        if (activeAudioSurah && activeAyahIndex !== null && selectedSurahAyahs[activeAyahIndex]) {
-          playTranslationTTS(selectedSurahAyahs[activeAyahIndex]);
+        if (activeAudioSurah && activeAyahIndex !== null && currentPlaylist[activeAyahIndex]) {
+          playTranslationTTS(currentPlaylist[activeAyahIndex]);
         }
       } else {
         audioRef.current.play().then(() => {
@@ -568,7 +605,7 @@ export default function App() {
   };
 
   const handleNextAyah = () => {
-    if (activeAyahIndex === null || !activeAudioSurah || selectedSurahAyahs.length === 0) return;
+    if (activeAyahIndex === null || !activeAudioSurah || currentPlaylist.length === 0) return;
     
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -576,7 +613,7 @@ export default function App() {
     setIsPlayingTranslation(false);
 
     const nextIndex = activeAyahIndex + 1;
-    if (nextIndex < selectedSurahAyahs.length) {
+    if (nextIndex < currentPlaylist.length) {
       playAyahAt(activeAudioSurah, nextIndex, true);
     } else {
       // Last verse of Surah
@@ -681,7 +718,20 @@ export default function App() {
     };
 
     const onError = (e: any) => {
+      // Ignore errors when the audio source is cleared, empty, or not active
+      if (!audio.src || audio.src === '' || audio.src === window.location.href || !audio.getAttribute('src')) {
+        return;
+      }
       console.error('Audio element error:', e);
+      const errCode = audio.error?.code;
+      const errMsg = audio.error?.message || '';
+      let friendlyMessage = 'Failed to load audio. Please check your internet connection.';
+      if (errCode === 1) friendlyMessage = 'Audio playback aborted.';
+      else if (errCode === 2) friendlyMessage = 'Network error while downloading audio.';
+      else if (errCode === 3) friendlyMessage = 'Audio decoding failed (unsupported format).';
+      else if (errCode === 4) friendlyMessage = 'Audio source not found or access denied.';
+      
+      setErrorMessage(`${friendlyMessage}${errMsg ? ' Details: ' + errMsg : ''}`);
       setIsPlaying(false);
     };
 
@@ -696,7 +746,7 @@ export default function App() {
       audio.removeEventListener('durationchange', onDurationChange);
       audio.removeEventListener('error', onError);
     };
-  }, [activeAyahIndex, activeAudioSurah, selectedSurahAyahs, repeatMode, playbackSpeed, isPlayingTranslation, playTranslation, translationId]);
+  }, [activeAyahIndex, activeAudioSurah, currentPlaylist, repeatMode, playbackSpeed, isPlayingTranslation, playTranslation, translationId]);
 
   // Bookmarking implementation
   const isBookmarked = (ayahNumber: number) => {
@@ -976,7 +1026,9 @@ export default function App() {
   };
 
   // Dynamic names
-  const activeReciterName = RECITERS.find((r) => r.id === reciterId)?.englishName || reciterId;
+  const activeReciterName = activeAudioSurah?.number === -1
+    ? (activeAudioSurah.englishNameTranslation || 'Reciter')
+    : (RECITERS.find((r) => r.id === reciterId)?.englishName || reciterId);
   const activeTranslationName = TRANSLATIONS.find((t) => t.id === translationId)?.englishName || translationId;
 
   return (
@@ -991,25 +1043,27 @@ export default function App() {
         <div className="absolute bottom-[-10%] left-[-10%] w-[320px] h-[320px] bg-emerald-900/10 rounded-full blur-[90px] pointer-events-none z-0"></div>
 
         {/* Status Area / Screen Header */}
-        <div className="bg-bg-header/95 text-text-primary px-6 pt-[calc(1.25rem+env(safe-area-inset-top,0px))] pb-3 md:px-8 md:pt-6 md:pb-3 flex justify-between items-center text-xs font-bold tracking-wider select-none shrink-0 border-b border-emerald-900/30 z-10 transition-colors duration-300">
-          <div className="flex items-center space-x-1">
-            <span className="text-[10px] bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 py-0.5 px-2 rounded font-extrabold uppercase tracking-widest">
-              AL-QURAN
-            </span>
-          </div>
-          <div className="flex items-center space-x-2.5">
-            <div className="text-[10px] text-emerald-400/80 font-bold uppercase tracking-wider">
-              {downloadedSurahIds.size > 0 ? 'Offline Playback Enabled' : 'Select Mode'}
+        {!isFullScreen && (
+          <div className="bg-bg-header/95 text-text-primary px-6 pt-[calc(1.25rem+env(safe-area-inset-top,0px))] pb-3 md:px-8 md:pt-6 md:pb-3 flex justify-between items-center text-xs font-bold tracking-wider select-none shrink-0 border-b border-emerald-900/30 z-10 transition-colors duration-300">
+            <div className="flex items-center space-x-1">
+              <span className="text-[10px] bg-emerald-950/40 border border-emerald-500/20 text-emerald-400 py-0.5 px-2 rounded font-extrabold uppercase tracking-widest">
+                AL-QURAN
+              </span>
             </div>
-            <button
-              onClick={toggleTheme}
-              className="p-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 active:scale-95 transition-all cursor-pointer flex items-center justify-center border border-emerald-500/20"
-              title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            >
-              {isDarkMode ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-            </button>
+            <div className="flex items-center space-x-2.5">
+              <div className="text-[10px] text-emerald-400/80 font-bold uppercase tracking-wider">
+                {downloadedSurahIds.size > 0 ? 'Offline Playback Enabled' : 'Select Mode'}
+              </div>
+              <button
+                onClick={toggleTheme}
+                className="p-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 active:scale-95 transition-all cursor-pointer flex items-center justify-center border border-emerald-500/20"
+                title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              >
+                {isDarkMode ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Dynamic Pages Render */}
         <div className="flex-1 overflow-hidden relative">
@@ -1050,6 +1104,8 @@ export default function App() {
                   reciterName={activeReciterName}
                   translationName={activeTranslationName}
                   translationId={translationId}
+                  isFullScreen={isFullScreen}
+                  onToggleFullScreen={setIsFullScreen}
                   arabicFontSize={arabicFontSize}
                   translationFontSize={translationFontSize}
                   arabicLineSpacing={arabicLineSpacing}
@@ -1332,10 +1388,10 @@ export default function App() {
         </div>
 
         {/* Persistent Bottom Audio Player Container */}
-        {activeAudioSurah && activeAyahIndex !== null && selectedSurahAyahs[activeAyahIndex] && (
+        {!isFullScreen && activeAudioSurah && activeAyahIndex !== null && currentPlaylist[activeAyahIndex] && (
           <AudioPlayer
             surah={activeAudioSurah}
-            ayah={selectedSurahAyahs[activeAyahIndex]}
+            ayah={currentPlaylist[activeAyahIndex]}
             isPlaying={isPlaying}
             onPlayPause={handlePlayPause}
             onNext={handleNextAyah}
@@ -1359,60 +1415,60 @@ export default function App() {
 
         {/* Global Bottom Tab Navigation */}
         {!selectedSurah && (
-          <div className="bg-bg-header/95 backdrop-blur-md border-t border-emerald-900/30 p-2.5 flex justify-around items-center absolute bottom-0 left-0 right-0 z-30 select-none shadow-[0_-10px_40px_rgba(0,0,0,0.55)] transition-colors duration-300">
+          <div className="bg-bg-header/95 backdrop-blur-md border-t border-emerald-900/30 p-2 flex justify-around items-center absolute bottom-0 left-0 right-0 z-30 select-none shadow-[0_-10px_40px_rgba(0,0,0,0.55)] transition-colors duration-300">
             <button
               id="tab-btn-surahs"
               onClick={() => setActiveTab('surahs')}
-              className={`flex flex-col items-center py-1 px-3 rounded-2xl transition-all ${
+              className={`flex flex-col items-center py-1 px-1.5 md:px-3 rounded-2xl transition-all ${
                 activeTab === 'surahs' ? 'text-emerald-400 font-bold' : 'text-slate-500 hover:text-emerald-500/80'
               }`}
             >
               <BookOpen className="w-5 h-5 shrink-0" />
-              <span className="text-[10px] mt-1 tracking-wider uppercase font-semibold">Quran</span>
+              <span className="text-[9.5px] mt-1 tracking-wider uppercase font-semibold">Quran</span>
             </button>
 
             <button
               id="tab-btn-read"
               onClick={() => setActiveTab('read')}
-              className={`flex flex-col items-center py-1 px-3 rounded-2xl transition-all ${
+              className={`flex flex-col items-center py-1 px-1.5 md:px-3 rounded-2xl transition-all ${
                 activeTab === 'read' ? 'text-emerald-400 font-bold' : 'text-slate-500 hover:text-emerald-500/80'
               }`}
             >
               <Book className="w-5 h-5 shrink-0" />
-              <span className="text-[10px] mt-1 tracking-wider uppercase font-semibold">Read Quran</span>
+              <span className="text-[9.5px] mt-1 tracking-wider uppercase font-semibold">Read</span>
             </button>
 
             <button
               id="tab-btn-bookmarks"
               onClick={() => setActiveTab('bookmarks')}
-              className={`flex flex-col items-center py-1 px-3 rounded-2xl transition-all ${
+              className={`flex flex-col items-center py-1 px-1.5 md:px-3 rounded-2xl transition-all ${
                 activeTab === 'bookmarks' ? 'text-emerald-400 font-bold' : 'text-slate-500 hover:text-emerald-500/80'
               }`}
             >
               <BookmarkIcon className="w-5 h-5 shrink-0" />
-              <span className="text-[10px] mt-1 tracking-wider uppercase font-semibold">Bookmarks</span>
+              <span className="text-[9.5px] mt-1 tracking-wider uppercase font-semibold">Bookmarks</span>
             </button>
 
             <button
               id="tab-btn-downloads"
               onClick={() => setActiveTab('downloads')}
-              className={`flex flex-col items-center py-1 px-3 rounded-2xl transition-all ${
+              className={`flex flex-col items-center py-1 px-1.5 md:px-3 rounded-2xl transition-all ${
                 activeTab === 'downloads' ? 'text-emerald-400 font-bold' : 'text-slate-500 hover:text-emerald-500/80'
               }`}
             >
               <Download className="w-5 h-5 shrink-0" />
-              <span className="text-[10px] mt-1 tracking-wider uppercase font-semibold">Saved</span>
+              <span className="text-[9.5px] mt-1 tracking-wider uppercase font-semibold">Saved</span>
             </button>
 
             <button
               id="tab-btn-settings"
               onClick={() => setActiveTab('settings')}
-              className={`flex flex-col items-center py-1 px-3 rounded-2xl transition-all ${
+              className={`flex flex-col items-center py-1 px-1.5 md:px-3 rounded-2xl transition-all ${
                 activeTab === 'settings' ? 'text-emerald-400 font-bold' : 'text-slate-500 hover:text-emerald-500/80'
               }`}
             >
               <Settings className="w-5 h-5 shrink-0" />
-              <span className="text-[10px] mt-1 tracking-wider uppercase font-semibold">Settings</span>
+              <span className="text-[9.5px] mt-1 tracking-wider uppercase font-semibold">Settings</span>
             </button>
           </div>
         )}
